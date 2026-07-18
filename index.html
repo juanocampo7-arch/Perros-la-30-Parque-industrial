@@ -1939,7 +1939,7 @@
 
         window.confirmSecurityAndReset = async function() {
             const pin = document.getElementById('security-pin').value;
-            if (pin !== '1089607033') { window.showToast("Clave incorrecta.", "error"); return; }
+            if (pin !== '1234') { window.showToast("Clave incorrecta.", "error"); return; }
 
             document.getElementById('security-modal').classList.add('hidden');
             window.showToast("Realizando cierre...", "success");
@@ -1975,7 +1975,7 @@
         // --- SISTEMA DE ELIMINAR CIERRE Z ---
         window.deleteCierreZ = async function(id) {
             const pin = prompt("Ingresa la Clave Maestra para eliminar este Cierre permanentemente:");
-            if (pin === '1089607033') {
+            if (pin === '1234') {
                 if(confirm("¿Estás 100% seguro de que deseas eliminar este Cierre Z? (Esta acción no se puede deshacer)")) {
                     try {
                         await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'history_cierres', id));
@@ -1992,7 +1992,7 @@
         // --- SISTEMA DE ELIMINAR ORDEN DEL HISTORIAL ---
         window.deleteHistoryOrder = async function(orderId) {
             const pin = prompt("Ingresa la Clave Maestra para eliminar esta orden del historial:");
-            if (pin === '1089607033') {
+            if (pin === '1234') {
                 if(confirm("¿Estás seguro de eliminar esta orden del historial y la base de datos? (No se puede deshacer)")) {
                     try {
                         await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'history_cashierOrders', orderId.toString()));
@@ -3358,7 +3358,7 @@
         
         window.confirmTabSecurity = function() {
             const pin = document.getElementById('tab-security-pin').value;
-            if (pin === '1089607033') {
+            if (pin === '1234') {
                 window.state.isAdminUnlocked = true; document.getElementById('tab-security-modal').classList.add('hidden');
                 document.getElementById('admin-unlocked-badge').classList.remove('hidden'); document.getElementById('admin-unlocked-badge').classList.add('flex');
                 if (window.state.pendingView === '__fiscal__') { window.state.pendingView = null; window.openFiscalModal(); }
