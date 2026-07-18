@@ -1422,6 +1422,11 @@
             'JUNIOR':     { pass: 'junior1',  role: 'mesero',         name: 'Junior' },
             'SEBAS':      { pass: 'sebas1',   role: 'mesero',         name: 'Sebas' },
             'RECEPCION':  { pass: 'recep1',   role: 'recepcionista',  name: 'Recepcionista' },
+            'VALERIA':    { pass: 'valeria30',role: 'admin',          name: 'Valeria' },
+            'JOEL':       { pass: 'joel30',   role: 'admin',          name: 'Joel' },
+            'LUISA':      { pass: 'luisa30',  role: 'admin',          name: 'Luisa' },
+            'MARY':       { pass: 'mary30',   role: 'admin',          name: 'Mary' },
+            'PAULA':      { pass: 'paula30',  role: 'admin',          name: 'Paula' },
         };
 
         window.state = {
@@ -1820,9 +1825,9 @@
                     html += `<p style="font-size:14px;margin-bottom:10px; font-weight:bold;">Ticket de Venta</p><div class="info-text"><b>Orden #:</b> ${data.orderId}</div>`;
                     if(data.type === 'domicilio') {
                         html += `<div class="info-text" style="font-size:16px; font-weight:bold; border: 1px solid #000; padding: 4px; margin-bottom: 5px; text-align:center;">DOMICILIO</div>`;
-                        if(data.name) html += `<div class="info-text"><b>Cliente:</b> ${data.name}</div>`;
-                        html += `<div class="info-text"><b>Dir:</b> ${data.address}</div>`;
-                        if(data.phone) html += `<div class="info-text"><b>Tel:</b> ${data.phone}</div>`;
+                        if(data.name) html += `<div class="info-text" style="font-size:18px; font-weight:bold;"><b>Cliente:</b> ${data.name}</div>`;
+                        html += `<div class="info-text" style="font-size:18px; font-weight:bold;"><b>Dir:</b> ${data.address}</div>`;
+                        if(data.phone) html += `<div class="info-text" style="font-size:18px; font-weight:bold;"><b>Tel:</b> ${data.phone}</div>`;
                     } else {
                         html += `<div class="info-text"><b>Mesa:</b> ${data.table}</div><div class="info-text"><b>Mesero:</b> ${data.waiter}</div>`;
                     }
