@@ -1825,24 +1825,8 @@ self.addEventListener('fetch', e => {
 
         // Impresión vía ventana popup — mucho más rápido que iframe
         window.printViaPopup = function(job, onDone) {
-            try {
-                let iframe = document.getElementById('__print_iframe__');
-                if (!iframe) {
-                    iframe = document.createElement('iframe');
-                    iframe.id = '__print_iframe__';
-                    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:58mm;height:1px;border:none;';
-                    document.body.appendChild(iframe);
-                }
-                iframe.onload = function() {
-                    try { iframe.contentWindow.focus(); iframe.contentWindow.print(); }
-                    catch(e) { console.warn('Print error:', e); }
-                    setTimeout(function(){ if(onDone) onDone(); }, 800);
-                };
-                iframe.srcdoc = job.html;
-            } catch(e) {
-                console.error('printViaPopup error:', e);
-                if (onDone) onDone();
-            }
+            // Impresión desactivada en esta versión (solo impresora térmica vía servidor)
+            if (onDone) onDone();
         };
 
         window.processPrintQueue = async function() {
@@ -4695,9 +4679,9 @@ self.addEventListener('fetch', e => {
             }
 
             const styles = `<style>
-                @page { margin: 0mm; size: 58mm auto; }
+                @page { margin: 2mm; size: 80mm auto; }
                 * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { font-family: 'Courier New', monospace; font-size: 10px; width: 54mm; padding: 1mm; }
+                body { font-family: 'Courier New', monospace; font-size: 11px; width: 72mm; }
                 .c { text-align: center; }
                 .b { font-weight: bold; }
                 .d { border-top: 1px dashed #000; margin: 3px 0; }
@@ -4719,8 +4703,8 @@ self.addEventListener('fetch', e => {
             html += `<div class="c" style="margin-top:4px;font-size:10px;">Gracias!</div>`;
             html += `</body></html>`;
 
-            // Imprimir ticket FR vía iframe (impresora USB de cuentas)
-            window.printViaPopup({ html: html, data: record, type: 'caja' }, function(){});
+            // Impresión FR desactivada — usar impresora térmica vía servidor
+            // window.printViaPopup desactivado
         };
     })();
     </script>
