@@ -1875,13 +1875,26 @@ self.addEventListener('fetch', e => {
                 win.document.write(job.html);
                 win.document.close();
 
-                let done = false;
+                let finished = false;
+                const finish = () => {
+                    if (finished) return;
+                    finished = true;
+                    try { win.close(); } catch(e) {}
+                    if (onDone) onDone();
+                };
+
+                // Cierra solo cuando el usuario ya resolvió el diálogo (imprimió o canceló).
+                try { win.onafterprint = finish; } catch(e) {}
+                // Salvavidas por si el navegador no dispara onafterprint: da tiempo real
+                // a que el usuario interactúe con el diálogo antes de forzar el cierre.
+                setTimeout(finish, 20000);
+
+                let printed = false;
                 const doPrint = () => {
-                    if (done) return;
-                    done = true;
+                    if (printed) return;
+                    printed = true;
                     win.focus();
                     win.print();
-                    setTimeout(() => { try { win.close(); } catch(e) {} if (onDone) onDone(); }, 400);
                 };
 
                 if (win.document.readyState === 'complete') {
