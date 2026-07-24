@@ -816,6 +816,9 @@ self.addEventListener('fetch', e => {
                         <button onclick="window.openAddInventoryModal()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-colors flex items-center gap-2 active:scale-95">
                             <i data-lucide="plus-circle" class="w-5 h-5"></i> Nuevo Insumo
                         </button>
+                        <button onclick="window.openBulkInventoryModal()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-colors flex items-center gap-2 active:scale-95">
+                            <i data-lucide="clipboard-list" class="w-5 h-5"></i> Restaurar Inventario
+                        </button>
                         <button onclick="window.attemptSwitchView('food-cost')" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-colors flex items-center gap-2 active:scale-95">
                             <i data-lucide="calculator" class="w-5 h-5"></i> Food Cost
                         </button>
@@ -1295,6 +1298,20 @@ self.addEventListener('fetch', e => {
             <div class="flex gap-2">
                 <button onclick="window.closeAddInventoryModal()" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors">Cancelar</button>
                 <button onclick="window.saveNewInventoryItem()" class="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-md transition-colors">Crear</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RESTAURACIÓN MASIVA DE INVENTARIO -->
+    <div id="bulk-inventory-modal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm hidden fade-in">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden p-6 hw-accelerate">
+            <div class="mx-auto w-12 h-12 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4"><i data-lucide="clipboard-list" class="w-6 h-6"></i></div>
+            <h3 class="text-xl font-bold text-gray-800 mb-1 text-center">Restaurar Inventario Masivamente</h3>
+            <p class="text-sm text-gray-500 mb-4 text-center">Una línea por insumo: <code>id_insumo:cantidad</code>. Revisa los valores antes de guardar — los que dicen <code>?</code> no se guardarán hasta que pongas el número correcto.</p>
+            <textarea id="bulk-inv-textarea" rows="16" class="w-full border-2 border-gray-300 rounded-xl p-3 text-xs font-mono focus:border-red-500 outline-none" spellcheck="false"></textarea>
+            <div class="flex gap-2 mt-4">
+                <button onclick="window.closeBulkInventoryModal()" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors">Cancelar</button>
+                <button onclick="window.saveBulkInventory()" class="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-md transition-colors">Guardar Todo</button>
             </div>
         </div>
     </div>
@@ -1823,10 +1840,39 @@ self.addEventListener('fetch', e => {
             } catch(e) { return false; }
         };
 
-        // Impresión vía ventana popup — mucho más rápido que iframe
+        // Impresión vía ventana popup — abre el ticket y lanza el diálogo de impresión del navegador
         window.printViaPopup = function(job, onDone) {
-            // Impresión desactivada en esta versión (solo impresora térmica vía servidor)
-            if (onDone) onDone();
+            try {
+                const win = window.open('', '_blank', 'width=380,height=600');
+                if (!win) {
+                    window.showToast('Bloqueado por el navegador: permite ventanas emergentes para imprimir', 'error');
+                    if (onDone) onDone();
+                    return;
+                }
+                win.document.open();
+                win.document.write(job.html);
+                win.document.close();
+
+                let done = false;
+                const doPrint = () => {
+                    if (done) return;
+                    done = true;
+                    win.focus();
+                    win.print();
+                    setTimeout(() => { try { win.close(); } catch(e) {} if (onDone) onDone(); }, 400);
+                };
+
+                if (win.document.readyState === 'complete') {
+                    setTimeout(doPrint, 150);
+                } else {
+                    win.onload = () => setTimeout(doPrint, 150);
+                    setTimeout(doPrint, 800); // respaldo por si onload no dispara
+                }
+            } catch (e) {
+                console.error('Error al imprimir:', e);
+                window.showToast('Error al abrir la ventana de impresión', 'error');
+                if (onDone) onDone();
+            }
         };
 
         window.processPrintQueue = async function() {
@@ -1868,7 +1914,7 @@ self.addEventListener('fetch', e => {
             if (dataList.length === 0) { window.showToast("No se encontró información para imprimir.", "error"); return; }
 
             dataList.forEach(({format, data}) => {
-                let html = `<html><head><style>@page{margin:0;size:auto;} body{font-family:'Courier New',Courier,monospace;width:280px;margin:0;padding:10px;font-size:14px;color:#000;} h1,h2,h3,p{margin:0;padding:2px 0;text-align:center;} .divider{border-top:1px dashed #000;margin:8px 0;} .item-row{display:flex;justify-content:space-between;margin-bottom:4px;align-items:flex-start;} .item-qty{font-weight:bold;padding-right:5px;} .item-name{flex:1;text-align:left;} .item-price{padding-left:5px;} .note{font-size:12px;font-style:italic;padding-left:20px;text-align:left;display:block;margin-top:-2px;margin-bottom:4px;} .totals{margin-top:10px;font-weight:bold;font-size:16px;text-align:right;} .header-title{font-size:22px;font-weight:bold;text-align:center;} .station-title{font-size:20px;font-weight:bold;border:2px solid #000;padding:5px;margin-bottom:10px;text-transform:uppercase;text-align:center;} .info-text{text-align:left;font-size:14px;margin-bottom:2px;} .ticket-container{padding-bottom:10px;}</style></head><body>`;
+                let html = `<html><head><meta charset="utf-8"><style>@page{size:58mm auto;margin:1mm;} *{box-sizing:border-box;} body{font-family:'Courier New',Courier,monospace;width:50mm;margin:0;padding:0 1mm;font-size:11px;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;} h1,h2,h3,p{margin:0;padding:2px 0;text-align:center;} .divider{border-top:1px dashed #000;margin:6px 0;} .item-row{display:flex;justify-content:space-between;margin-bottom:3px;align-items:flex-start;} .item-qty{font-weight:bold;padding-right:4px;} .item-name{flex:1;text-align:left;} .item-price{padding-left:4px;} .note{font-size:10px;font-style:italic;padding-left:14px;text-align:left;display:block;margin-top:-2px;margin-bottom:3px;} .totals{margin-top:8px;font-weight:bold;font-size:13px;text-align:right;} .header-title{font-size:16px;font-weight:bold;text-align:center;} .station-title{font-size:15px;font-weight:bold;border:2px solid #000;padding:4px;margin-bottom:8px;text-transform:uppercase;text-align:center;} .info-text{text-align:left;font-size:11px;margin-bottom:2px;} .ticket-container{padding-bottom:8px;}</style></head><body>`;
                 html += `<div class="ticket-container">`;
                 
                 if (format === 'caja') {
@@ -2103,6 +2149,78 @@ self.addEventListener('fetch', e => {
         };
 
         window.closeAddInventoryModal = function() { document.getElementById('add-inventory-modal').classList.add('hidden'); };
+
+        // --- RESTAURACIÓN MASIVA DE INVENTARIO ---
+        // Prellenado con el conteo (columna SOBRA) de la planilla física "Parque Industrial" 22/07.
+        // Las líneas con "?" son valores que no se alcanzaron a leer bien en la foto — corrígelas antes de guardar.
+        window.BULK_INVENTORY_TEMPLATE = `# Formato: id_insumo:cantidad   (una línea = un insumo)
+# Revisa cada número contra tu planilla física antes de darle Guardar Todo.
+pan_perro:36
+pan_hamburguesa:40
+pan_san_bernardo:0
+arepa:8
+salchicha:96
+salchicha_ranchera:4
+carne_res:23
+carne_pollo:5
+carne_cerdo:8
+desgranado:4
+chuzo_cerdo:4
+chuzo_pollo:4
+picada:3
+costillas_bbq:3
+pulpa_coco:5
+pulpa_mango_biche:0
+jugo_1l:7
+bebida_1_5l:14
+# --- Estos no se leyeron bien en la foto, pon el número correcto ---
+papa_mini:?
+salchipapa_pequena:?
+salchipapa_mediana:?
+salchipapa_megafamiliar:?
+bebida_gopack:?
+# --- Estos aparecen en tu planilla pero no existen todavía como insumo en el sistema ---
+# Créalos primero con "Nuevo Insumo" si los quieres controlar: Salchicha Vegana, Carne Vegana,
+# Porciones de Pizza, Carne P/Reina, Pollo Desmechado`;
+
+        window.openBulkInventoryModal = function() {
+            document.getElementById('bulk-inv-textarea').value = window.BULK_INVENTORY_TEMPLATE;
+            document.getElementById('bulk-inventory-modal').classList.remove('hidden');
+        };
+        window.closeBulkInventoryModal = function() { document.getElementById('bulk-inventory-modal').classList.add('hidden'); };
+
+        window.saveBulkInventory = async function() {
+            const raw = document.getElementById('bulk-inv-textarea').value;
+            const lines = raw.split('\n');
+            let saved = 0, skipped = 0, errors = [];
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed || trimmed.startsWith('#')) continue;
+                const parts = trimmed.split(':');
+                if (parts.length < 2) { skipped++; continue; }
+                const id = parts[0].trim();
+                const valueStr = parts.slice(1).join(':').trim();
+                if (!id || valueStr === '?' || valueStr === '') { skipped++; continue; }
+                const qty = parseFloat(valueStr);
+                if (isNaN(qty)) { skipped++; continue; }
+                const name = INVENTORY_BASE[id] || (window.state.inventory[id] && window.state.inventory[id].name) || id;
+                try {
+                    await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'inventory', id), { name: name, stock: qty }, { merge: true });
+                    saved++;
+                } catch (e) {
+                    console.error('Error guardando', id, e);
+                    errors.push(id);
+                }
+            }
+
+            window.closeBulkInventoryModal();
+            if (errors.length > 0) {
+                window.showToast(`Guardados: ${saved} · Error en: ${errors.join(', ')}`, 'error');
+            } else {
+                window.showToast(`✅ Inventario restaurado: ${saved} insumos actualizados (${skipped} omitidos)`, 'success');
+            }
+        };
 
         window.saveNewInventoryItem = async function() {
             const name = document.getElementById('new-inv-name').value.trim();
@@ -4679,9 +4797,9 @@ self.addEventListener('fetch', e => {
             }
 
             const styles = `<style>
-                @page { margin: 2mm; size: 80mm auto; }
+                @page { margin: 1mm; size: 58mm auto; }
                 * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { font-family: 'Courier New', monospace; font-size: 11px; width: 72mm; }
+                body { font-family: 'Courier New', monospace; font-size: 10px; width: 50mm; }
                 .c { text-align: center; }
                 .b { font-weight: bold; }
                 .d { border-top: 1px dashed #000; margin: 3px 0; }
@@ -4703,8 +4821,7 @@ self.addEventListener('fetch', e => {
             html += `<div class="c" style="margin-top:4px;font-size:10px;">Gracias!</div>`;
             html += `</body></html>`;
 
-            // Impresión FR desactivada — usar impresora térmica vía servidor
-            // window.printViaPopup desactivado
+            window.printViaPopup({ html: html, data: record, type: 'caja' }, null);
         };
     })();
     </script>
