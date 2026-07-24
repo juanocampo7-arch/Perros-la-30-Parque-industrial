@@ -382,6 +382,10 @@ self.addEventListener('fetch', e => {
                     <span class="flex-1">IP Impresora</span>
                     <span class="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">LAN</span>
                 </button>
+                <button onclick="window.openConfigTransferModal()" class="flex items-center gap-3 px-4 py-3 rounded-xl text-left font-bold transition-all text-gray-600 hover:bg-gray-100 active:scale-95">
+                    <i data-lucide="share-2" class="w-5 h-5 shrink-0"></i>
+                    <span class="flex-1">Config. entre Sedes</span>
+                </button>
 
                 <!-- BOTONES INFERIORES -->
                 <div class="mt-auto pt-3 border-t border-gray-200 flex flex-col gap-2">
@@ -1316,6 +1320,24 @@ self.addEventListener('fetch', e => {
         </div>
     </div>
 
+    <!-- CONFIGURACIÓN ENTRE SEDES (menú, recetas, datos fiscales — SIN inventario) -->
+    <div id="config-transfer-modal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm hidden fade-in">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden p-6 hw-accelerate">
+            <div class="mx-auto w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4"><i data-lucide="share-2" class="w-6 h-6"></i></div>
+            <h3 class="text-xl font-bold text-gray-800 mb-1 text-center">Configuración entre Sedes</h3>
+            <p class="text-sm text-gray-500 mb-4 text-center">Copia el <b>menú, recetas y datos fiscales</b> de una sede a otra. <b>No incluye</b> cantidades de inventario ni ventas — cada sede lleva su propio stock.</p>
+            <div class="flex gap-2 mb-3">
+                <button onclick="window.exportSedeConfig()" class="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-md transition-colors text-sm">1. Exportar de esta sede</button>
+                <button onclick="window.importSedeConfig()" class="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md transition-colors text-sm">3. Importar aquí</button>
+            </div>
+            <p class="text-xs text-gray-400 mb-2">2. Copia el texto generado, ábrelo en la otra sede, pégalo aquí y dale "Importar aquí".</p>
+            <textarea id="config-transfer-textarea" rows="12" class="w-full border-2 border-gray-300 rounded-xl p-3 text-xs font-mono focus:border-blue-500 outline-none" spellcheck="false" placeholder="Aquí aparece el texto a copiar, o pega el que te compartieron de otra sede..."></textarea>
+            <div class="flex gap-2 mt-4">
+                <button onclick="window.closeConfigTransferModal()" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- SCRIPT PARA INSTALAR LA APP (PWA) -->
     <script>
       let deferredPrompt;
@@ -1914,7 +1936,7 @@ self.addEventListener('fetch', e => {
             if (dataList.length === 0) { window.showToast("No se encontró información para imprimir.", "error"); return; }
 
             dataList.forEach(({format, data}) => {
-                let html = `<html><head><meta charset="utf-8"><style>@page{size:58mm auto;margin:1mm;} *{box-sizing:border-box;} body{font-family:'Courier New',Courier,monospace;width:50mm;margin:0;padding:0 1mm;font-size:11px;font-weight:bold;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;} h1,h2,h3,p{margin:0;padding:2px 0;text-align:center;} .divider{border-top:1px dashed #000;margin:6px 0;} .item-row{display:flex;justify-content:space-between;margin-bottom:3px;align-items:flex-start;} .item-qty{font-weight:bold;padding-right:4px;} .item-name{flex:1;text-align:left;} .item-price{padding-left:4px;} .note{font-size:10px;font-style:italic;padding-left:14px;text-align:left;display:block;margin-top:-2px;margin-bottom:3px;} .totals{margin-top:8px;font-weight:bold;font-size:13px;text-align:right;} .header-title{font-size:16px;font-weight:bold;text-align:center;} .station-title{font-size:15px;font-weight:bold;border:2px solid #000;padding:4px;margin-bottom:8px;text-transform:uppercase;text-align:center;} .info-text{text-align:left;font-size:11px;margin-bottom:2px;} .ticket-container{padding-bottom:8px;}</style></head><body>`;
+                let html = `<html><head><meta charset="utf-8"><style>@page{size:58mm auto;margin:1mm;} *{box-sizing:border-box;} body{font-family:'Courier New',Courier,monospace;width:48mm;margin:0;padding:0;zoom:0.85;font-size:11px;font-weight:bold;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;} h1,h2,h3,p{margin:0;padding:2px 0;text-align:center;} .divider{border-top:1px dashed #000;margin:6px 0;} .item-row{display:flex;justify-content:space-between;margin-bottom:3px;align-items:flex-start;} .item-qty{font-weight:bold;padding-right:4px;} .item-name{flex:1;text-align:left;} .item-price{padding-left:4px;} .note{font-size:10px;font-style:italic;padding-left:14px;text-align:left;display:block;margin-top:-2px;margin-bottom:3px;} .totals{margin-top:8px;font-weight:bold;font-size:13px;text-align:right;} .header-title{font-size:16px;font-weight:bold;text-align:center;} .station-title{font-size:15px;font-weight:bold;border:2px solid #000;padding:4px;margin-bottom:8px;text-transform:uppercase;text-align:center;} .info-text{text-align:left;font-size:11px;margin-bottom:2px;} .ticket-container{padding-bottom:8px;}</style></head><body>`;
                 html += `<div class="ticket-container">`;
                 
                 if (format === 'caja') {
@@ -2219,6 +2241,66 @@ bebida_gopack:?
                 window.showToast(`Guardados: ${saved} · Error en: ${errors.join(', ')}`, 'error');
             } else {
                 window.showToast(`✅ Inventario restaurado: ${saved} insumos actualizados (${skipped} omitidos)`, 'success');
+            }
+        };
+
+        // --- CONFIGURACIÓN ENTRE SEDES (menú, recetas, datos fiscales) ---
+        window.openConfigTransferModal = function() {
+            document.getElementById('config-transfer-textarea').value = '';
+            document.getElementById('config-transfer-modal').classList.remove('hidden');
+        };
+        window.closeConfigTransferModal = function() { document.getElementById('config-transfer-modal').classList.add('hidden'); };
+
+        window.exportSedeConfig = async function() {
+            try {
+                const configSnap = await getDocs(collection(db, 'artifacts', appId, 'public', 'data', 'config'));
+                let menuData = null, recipesData = null, businessData = null;
+                configSnap.forEach(d => {
+                    if (d.id === 'menu') menuData = d.data().menuData || null;
+                    if (d.id === 'recipes') recipesData = d.data().recipesData || null;
+                    if (d.id === 'business') businessData = d.data() || null;
+                });
+                const payload = {
+                    tipo: 'perros-la-30-config-sede',
+                    origen: appId,
+                    fecha: new Date().toISOString(),
+                    menuData: menuData || window.state.menu || window.defaultMenu,
+                    recipesData: recipesData || window.state.recipes || RECIPES,
+                    businessData: businessData || window.state.fiscalData || {}
+                };
+                document.getElementById('config-transfer-textarea').value = JSON.stringify(payload, null, 2);
+                window.showToast('✅ Configuración exportada — copia el texto de abajo');
+            } catch (e) {
+                console.error(e);
+                window.showToast('Error exportando configuración', 'error');
+            }
+        };
+
+        window.importSedeConfig = async function() {
+            const raw = document.getElementById('config-transfer-textarea').value.trim();
+            if (!raw) { window.showToast('Pega primero el texto exportado de la otra sede', 'error'); return; }
+            let payload;
+            try {
+                payload = JSON.parse(raw);
+            } catch (e) {
+                window.showToast('Ese texto no es un JSON válido', 'error');
+                return;
+            }
+            if (payload.tipo !== 'perros-la-30-config-sede') {
+                window.showToast('Este texto no parece ser una exportación de configuración válida', 'error');
+                return;
+            }
+            if (!confirm(`Esto va a REEMPLAZAR el menú, recetas y datos fiscales de ESTA sede (${appId}) con los de "${payload.origen}". El inventario y las ventas NO se tocan. ¿Continuar?`)) return;
+
+            try {
+                if (payload.menuData) await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'menu'), { menuData: payload.menuData });
+                if (payload.recipesData) await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'recipes'), { recipesData: payload.recipesData });
+                if (payload.businessData) await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'config', 'business'), payload.businessData);
+                window.showToast('✅ Configuración importada correctamente');
+                window.closeConfigTransferModal();
+            } catch (e) {
+                console.error(e);
+                window.showToast('Error importando configuración', 'error');
             }
         };
 
@@ -3460,7 +3542,7 @@ bebida_gopack:?
 
         window.printReporteZ = function() {
             const data = window.state.zReportData; if (!data) return;
-            let html = `<html><head><meta charset="utf-8"><style>@page{size:58mm auto;margin:1mm;} *{box-sizing:border-box;} body{font-family:'Courier New',Courier,monospace;width:50mm;margin:0;padding:0 1mm;font-size:11px;font-weight:bold;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;} h1,p{margin:0;padding:2px 0;text-align:center;} .divider{border-top:1px dashed #000;margin:6px 0;} .item-row{display:flex;justify-content:space-between;margin-bottom:2px;font-size:10px;} .item-qty{font-weight:bold;width:24px;} .item-name{flex:1;} .item-price{font-weight:bold;text-align:right;} .totals{margin-top:8px;font-weight:bold;font-size:13px;text-align:right;} .header-title{font-size:15px;font-weight:bold;text-align:center;} .summary-row{display:flex;justify-content:space-between;margin-bottom:2px;font-size:10px;}</style></head><body><div class="header-title">PERROS LA 30</div><p>REPORTE Z (CIERRE DIARIO)</p><div class="divider"></div>`;
+            let html = `<html><head><meta charset="utf-8"><style>@page{size:58mm auto;margin:1mm;} *{box-sizing:border-box;} body{font-family:'Courier New',Courier,monospace;width:48mm;margin:0;padding:0;zoom:0.85;font-size:11px;font-weight:bold;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;} h1,p{margin:0;padding:2px 0;text-align:center;} .divider{border-top:1px dashed #000;margin:6px 0;} .item-row{display:flex;justify-content:space-between;margin-bottom:2px;font-size:10px;} .item-qty{font-weight:bold;width:24px;} .item-name{flex:1;} .item-price{font-weight:bold;text-align:right;} .totals{margin-top:8px;font-weight:bold;font-size:13px;text-align:right;} .header-title{font-size:15px;font-weight:bold;text-align:center;} .summary-row{display:flex;justify-content:space-between;margin-bottom:2px;font-size:10px;}</style></head><body><div class="header-title">PERROS LA 30</div><p>REPORTE Z (CIERRE DIARIO)</p><div class="divider"></div>`;
             const _fdz = window.state.fiscalData || {};
             html += `<p style="font-size:11px;">NIT: ${_fdz.nit || '—'}</p>`;
             html += `<p style="font-size:11px;">${_fdz.regimenIva || 'No Responsable de IVA'}</p>`;
@@ -4799,7 +4881,7 @@ bebida_gopack:?
             const styles = `<style>
                 @page { margin: 1mm; size: 58mm auto; }
                 * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { font-family: 'Courier New', monospace; font-size: 10px; font-weight: bold; width: 50mm; }
+                body { font-family: 'Courier New', monospace; font-size: 10px; font-weight: bold; width: 48mm; zoom: 0.85; }
                 .c { text-align: center; }
                 .b { font-weight: bold; }
                 .d { border-top: 1px dashed #000; margin: 3px 0; }
